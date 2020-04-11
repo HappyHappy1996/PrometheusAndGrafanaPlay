@@ -1,0 +1,42 @@
+version: '2'
+
+services:
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - prometheus_data:/prometheus
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    ports:
+      - '9090:9090'
+
+  grafana:
+    image: grafana/grafana:latest
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      - ./grafana/config.ini:/etc/grafana/config.ini
+      - ./grafana/dashboards:/var/lib/grafana/dashboards
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=illchangeitanyway
+    depends_on:
+      - prometheus
+    ports:
+      - '3000:3000'
+
+  back-end:
+    build: ./back-end
+    restart: always
+    container_name: back-end
+    volumes:
+      - ./back-end/src:/app/src
+    ports:
+      - 127.0.0.1:9200:3000/tcp
+      - 9262:9262 # debugger port
+    command: npm run start
+
+
+volumes:
+  prometheus_data: {}
+  grafana_data: {}
